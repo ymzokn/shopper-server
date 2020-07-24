@@ -12,7 +12,7 @@ router.post("/register", async (req, res) => {
         res.status(201).send({ user, token })
 
     } catch (e) {
-        res.status(500).send()
+        res.status(400).send()
     }
 })
 

@@ -1,5 +1,6 @@
 const mongoose = require("mongoose")
-const { ObjectID } = require("mongodb")
+var crypto = require("crypto")
+
 const listSchema = new mongoose.Schema({
     name: {
         type: String
@@ -15,6 +16,9 @@ const listSchema = new mongoose.Schema({
             }
         },
     ],
+    inviteCode: {
+        type: String
+    },
     author: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
@@ -32,6 +36,18 @@ listSchema.methods.saveListAuthorAndSubscribe = async function (user) {
         const list = this
         list.author = user
         list.subscribers = [...list.subscribers, user]
+        await list.save()
+    } catch (e) {
+        throw new Error()
+    }
+}
+
+listSchema.methods.generateInviteCode = async function (user) {
+    try {
+        const list = this
+
+        var inviteCode = crypto.randomBytes(4).toString('hex');
+        list.inviteCode = inviteCode
         await list.save()
     } catch (e) {
         throw new Error()

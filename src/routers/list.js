@@ -2,6 +2,9 @@ const express = require("express")
 const List = require("../models/list")
 const router = new express.Router()
 const auth = require("../middleware/auth")
+const author = require("../middleware/author")
+const sub = require("../middleware/sub")
+const { restart } = require("nodemon")
 
 router.get("/lists", auth, async (req, res) => {
     try {
@@ -15,6 +18,10 @@ router.get("/lists", auth, async (req, res) => {
 router.get("/lists/:id", auth, async (req, res) => {
     try {
         const list = await List.findById({ _id: req.params.id })
+        if (!list.subscribers.includes(req.user._id.toString())) {
+            return res.status(401).send()
+        }
+
         if (!list) {
             return res.status(404).send()
         }
@@ -38,7 +45,44 @@ router.post("/lists", auth, async (req, res) => {
     }
 })
 
-router.patch("/lists/:id", auth, async (req, res) => {
+router.get("/lists/invite/:id", [auth, sub], async (req, res) => {
+    try {
+        const list = await List.findById(req.params.id)
+        if (!list) {
+            res.status(404).send()
+        }
+
+        list.generateInviteCode(req.user)
+        res.send(list.inviteCode)
+    } catch (error) {
+        res.status(500).send()
+    }
+})
+
+router.post("/lists/join/:id", auth, async (req, res) => {
+    try {
+
+        const list = await List.findById(req.params.id)
+
+        if (!list) {
+            res.status(404).send()
+        }
+
+        if (list.inviteCode !== req.body.inviteCode) {
+            res.status(401).send()
+        }
+
+        list.subscribers = [...list.subscribers, req.user]
+        list.inviteCode = ""
+        await list.save()
+        res.send(list)
+
+    } catch (e) {
+        res.status(500).send()
+    }
+})
+
+router.patch("/lists/:id", [auth, sub], async (req, res) => {
     const updates = Object.keys(req.body)
     const allowedUpdates = ["subscribers", "items"]
     const isValidOperation = updates.every(update => allowedUpdates.includes(update))
@@ -47,7 +91,8 @@ router.patch("/lists/:id", auth, async (req, res) => {
     }
 
     try {
-        const list = await List.findById(req.params.id)
+        const list = req.list
+
         updates.forEach(update => {
             list[update] = req.body[update]
         })
@@ -55,7 +100,7 @@ router.patch("/lists/:id", auth, async (req, res) => {
         await list.save()
 
         if (!list) {
-            return res.status(400).send()
+            return res.status(404).send()
         }
 
         res.send(list)
@@ -65,13 +110,14 @@ router.patch("/lists/:id", auth, async (req, res) => {
     }
 })
 
-router.delete("/lists/:id", auth, async (req, res) => {
+router.delete("/lists/:id", [auth, author], async (req, res) => {
     try {
-        const list = await List.findByIdAndDelete(req.params.id)
-
+        const list = req.list
         if (!list) {
             return res.status(404).send()
         }
+
+        list.remove()
 
         res.send(list)
 
