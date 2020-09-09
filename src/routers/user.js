@@ -19,7 +19,7 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
     try {
         const token = await User.findByCredentials(req.body.username, req.body.password)
-        res.send(token)
+        res.send({ token })
     } catch (e) {
         res.status(401).send({ error: "Invalid Login" })
     }

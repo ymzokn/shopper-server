@@ -1,8 +1,11 @@
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 
-mongoose.connect("mongodb://127.0.0.1:27017/shopper-server", {
+mongoose.connect(
+  "mongodb+srv://okan:shopperDbUser@shopper-server.ci8gf.mongodb.net/shopper-server?retryWrites=true&w=majority",
+  {
     useNewUrlParser: true,
     useCreateIndex: true,
     useFindAndModify: false,
-    useUnifiedTopology: true
-})
+    useUnifiedTopology: true,
+  }
+);
