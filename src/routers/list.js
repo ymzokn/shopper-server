@@ -4,7 +4,6 @@ const router = new express.Router();
 const auth = require("../middleware/auth");
 const author = require("../middleware/author");
 const sub = require("../middleware/sub");
-const { restart } = require("nodemon");
 
 router.get("/lists", auth, async (req, res) => {
   try {
