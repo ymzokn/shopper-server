@@ -17,16 +17,17 @@ router.get("/lists", auth, async (req, res) => {
 router.get("/lists/:id", auth, async (req, res) => {
   try {
     const list = await List.findById({ _id: req.params.id });
-    if (!list.subscribers.includes(req.user._id.toString())) {
-      return res.status(401).send();
-    }
 
     if (!list) {
       return res.status(404).send();
     }
+
+    if (!list.subscribers.includes(req.user._id.toString())) {
+      return res.status(401).send();
+    }
+
     await list.populate("author").execPopulate();
     await list.populate("subscribers").execPopulate();
-
     res.send(list);
   } catch (e) {
     res.status(500).send();
@@ -36,7 +37,6 @@ router.get("/lists/:id", auth, async (req, res) => {
 router.post("/lists", auth, async (req, res) => {
   try {
     const list = new List(req.body);
-    // await list.save()
     list.saveListAuthorAndSubscribe(req.user);
     res.send(list);
   } catch (e) {
@@ -47,6 +47,7 @@ router.post("/lists", auth, async (req, res) => {
 router.get("/lists/invite/:id", [auth, sub], async (req, res) => {
   try {
     const list = await List.findById(req.params.id);
+
     if (!list) {
       res.status(404).send();
     }
@@ -61,13 +62,11 @@ router.get("/lists/invite/:id", [auth, sub], async (req, res) => {
 router.post("/lists/join/:code", auth, async (req, res) => {
   try {
     const list = await List.findOne({ inviteCode: req.params.code });
+
     if (!list) {
       res.status(404).send();
     }
 
-    // if (list.inviteCode !== req.body.inviteCode) {
-    //     res.status(401).send()
-    // }
     list.subscribers = [...list.subscribers, req.user];
     list.inviteCode = "";
     await list.save();
@@ -95,11 +94,6 @@ router.patch("/lists/:id", [auth, sub], async (req, res) => {
     });
 
     await list.save();
-
-    if (!list) {
-      return res.status(404).send();
-    }
-
     res.send(list);
   } catch (e) {
     res.status(400).send(e);
